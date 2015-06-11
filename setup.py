@@ -35,5 +35,5 @@ setup(
             'flexible_grader = flexible_grader:FlexibleGradingXBlock',
         ]
     },
-    package_data=package_data("flexible_grader", ["static", "public"]),
+    package_data=package_data("flexible_grader", ["static", "templates"]),
 )

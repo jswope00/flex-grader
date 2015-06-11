@@ -18,5 +18,7 @@ function FlexibleGradingXBlock(runtime, element) {
 
     $(function ($) {
         /* Here's where you'd do things on page load. */
+        console.log(runtime);
+        console.log(element);
     });
 }

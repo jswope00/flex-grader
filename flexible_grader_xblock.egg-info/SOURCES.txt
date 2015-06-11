@@ -4,6 +4,8 @@ flexible_grader/static/README.txt
 flexible_grader/static/css/flexible_grader.css
 flexible_grader/static/html/flexible_grader.html
 flexible_grader/static/js/src/flexible_grader.js
+flexible_grader/templates/flexible_grader/edit.html
+flexible_grader/templates/flexible_grader/show.html
 flexible_grader_xblock.egg-info/PKG-INFO
 flexible_grader_xblock.egg-info/SOURCES.txt
 flexible_grader_xblock.egg-info/dependency_links.txt

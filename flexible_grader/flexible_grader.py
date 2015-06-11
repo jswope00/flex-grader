@@ -2,8 +2,10 @@
 
 import pkg_resources
 
+from django.template import Context, Template
+
 from xblock.core import XBlock
-from xblock.fields import Scope, Integer
+from xblock.fields import Scope, Integer, String
 from xblock.fragment import Fragment
 
 
@@ -15,10 +17,19 @@ class FlexibleGradingXBlock(XBlock):
     # Fields are defined on the class.  You can access them in your code as
     # self.<fieldname>.
 
-    # TO-DO: delete count, and define your own fields.
-    count = Integer(
-        default=0, scope=Scope.user_state,
-        help="A simple counter, to show something happening",
+    has_score = True
+    icon_class = 'problem'
+
+    display_name = String(
+            default="Flexible Grading Block", scope=Scope.settings,
+            help="Flexible Grading help."
+    )
+
+    points = Integer(
+        display_name="Maximum score",
+        help=("Maximum grade score given to assignment by staff."),
+        default=100,
+        scope=Scope.settings
     )
 
     def resource_string(self, path):
@@ -32,25 +43,17 @@ class FlexibleGradingXBlock(XBlock):
         The primary view of the FlexibleGradingXBlock, shown to students
         when viewing courses.
         """
-        html = self.resource_string("static/html/flexible_grader.html")
-        frag = Fragment(html.format(self=self))
-        frag.add_css(self.resource_string("static/css/flexible_grader.css"))
-        frag.add_javascript(self.resource_string("static/js/src/flexible_grader.js"))
-        frag.initialize_js('FlexibleGradingXBlock')
-        return frag
-
-    # TO-DO: change this handler to perform your own actions.  You may need more
-    # than one handler, or you may not need any handlers at all.
-    @XBlock.json_handler
-    def increment_count(self, data, suffix=''):
-        """
-        An example handler, which increments the data.
-        """
-        # Just to show data coming in...
-        assert data['hello'] == 'world'
-
-        self.count += 1
-        return {"count": self.count}
+        fragment = Fragment()
+        fragment.add_content(
+            render_template(
+                'templates/flexible_grader/show.html',
+                context
+            )
+        )
+        fragment.add_css(self.resource_string("static/css/flexible_grader.css"))
+        fragment.add_javascript(self.resource_string("static/js/src/flexible_grader.js"))
+        fragment.initialize_js('FlexibleGradingXBlock')
+        return fragment
 
     # TO-DO: change this to create the scenarios you'd like to see in the
     # workbench while developing your XBlock.
@@ -66,3 +69,20 @@ class FlexibleGradingXBlock(XBlock):
                 </vertical_demo>
              """),
         ]
+
+
+def load_resource(resource_path):
+    """
+    Gets the content of a resource
+    """
+    resource_content = pkg_resources.resource_string(__name__, resource_path)
+    return unicode(resource_content)
+
+
+def render_template(template_path, context={}):
+    """
+    Evaluate a template by resource path, applying the provided context
+    """
+    template_str = load_resource(template_path)
+    template = Template(template_str)
+    return template.render(Context(context))
