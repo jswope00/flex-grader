@@ -1,0 +1,12 @@
+flexible_grader/__init__.py
+flexible_grader/flexible_grader.py
+flexible_grader/static/README.txt
+flexible_grader/static/css/flexible_grader.css
+flexible_grader/static/html/flexible_grader.html
+flexible_grader/static/js/src/flexible_grader.js
+flexible_grader_xblock.egg-info/PKG-INFO
+flexible_grader_xblock.egg-info/SOURCES.txt
+flexible_grader_xblock.egg-info/dependency_links.txt
+flexible_grader_xblock.egg-info/entry_points.txt
+flexible_grader_xblock.egg-info/requires.txt
+flexible_grader_xblock.egg-info/top_level.txt

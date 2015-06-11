@@ -1,0 +1,9 @@
+/* CSS for FlexibleGradingXBlock */
+
+.flexible_grader_block .count {
+    font-weight: bold;
+}
+
+.flexible_grader_block p {
+    cursor: pointer;
+}
