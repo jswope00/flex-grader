@@ -108,6 +108,11 @@ class FlexibleGradingXBlock(XBlock):
             # log.error("Don't swallow my exceptions", exc_info=True)
             raise
 
+    @XBlock.json_handler
+    def save_flexible_grader(self, data, suffix=''):
+        for name in ('display_name', 'points', 'weight'):
+            setattr(self, name, data.get(name, getattr(self, name)))
+
     # TO-DO: change this to create the scenarios you'd like to see in the
     # workbench while developing your XBlock.
     @staticmethod

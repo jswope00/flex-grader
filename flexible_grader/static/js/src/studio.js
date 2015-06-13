@@ -1,5 +1,5 @@
 function FlexibleGradingXBlock(runtime, element, server) {
-    var saveUrl = runtime.handleUrl(element, 'save_sga');
+    var saveUrl = runtime.handlerUrl(element, 'save_flexible_grader');
 
     var validators = {
         'number': function(x) {
