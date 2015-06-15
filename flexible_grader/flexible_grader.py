@@ -1,12 +1,15 @@
 """TO-DO: Write a description of what this XBlock is."""
 
 import pkg_resources
+import logging
 
 from django.template import Context, Template
 
 from xblock.core import XBlock
 from xblock.fields import Scope, Float, String
 from xblock.fragment import Fragment
+
+log = logging.getLogger(__name__)
 
 
 class FlexibleGradingXBlock(XBlock):
@@ -70,7 +73,7 @@ class FlexibleGradingXBlock(XBlock):
                 context
             )
         )
-        
+
         fragment.add_css(
             self.resource_string("static/css/flexible_grader.css"))
         fragment.add_javascript(
@@ -112,7 +115,7 @@ class FlexibleGradingXBlock(XBlock):
 
             return fragment
         except:
-            # log.error("Don't swallow my exceptions", exc_info=True)
+            log.error("Don't swallow my exceptions", exc_info=True)
             raise
 
     @XBlock.json_handler
