@@ -2,11 +2,16 @@
 
 import pkg_resources
 import logging
+import json
+
+from courseware.models import StudentModule
 
 from django.template import Context, Template
 
+from webob.response import Response
+
 from xblock.core import XBlock
-from xblock.fields import Scope, Float, String
+from xblock.fields import Scope, Float, String, Boolean
 from xblock.fragment import Fragment
 
 log = logging.getLogger(__name__)
@@ -55,6 +60,13 @@ class FlexibleGradingXBlock(XBlock):
         scope=Scope.user_state
     )
 
+    score_published = Boolean(
+        display_name="Whether score has been published.",
+        help=("This is a terrible hack, an implementation detail."),
+        default=True,
+        scope=Scope.user_state
+    )
+
     comment = String(
         display_name="Instructor comment",
         default='',
@@ -75,6 +87,21 @@ class FlexibleGradingXBlock(XBlock):
         The primary view of the FlexibleGradingXBlock, shown to students
         when viewing courses.
         """
+        if not self.score_published:
+            self.runtime.publish(self, 'grade', {
+                'value': self.score,
+                'max_value': self.max_score()
+            })
+            self.score_published = True
+
+        context = {
+            "student_state": json.dumps(self.student_state()),
+            "id": self.location.name.replace('.', '_')
+        }
+
+        if self.show_staff_grading_interface():
+            context['is_course_staff'] = True
+
         fragment = Fragment()
         fragment.add_content(
             render_template(
@@ -90,6 +117,23 @@ class FlexibleGradingXBlock(XBlock):
         fragment.initialize_js('FlexibleGradingXBlock')
 
         return fragment
+
+    def student_state(self):
+        """
+        Returns a JSON serializable representation of student's state for
+        rendering in client view.
+        """
+
+        if self.score is not None:
+            graded = {'score': self.score, 'comment': self.comment}
+        else:
+            graded = None
+
+        return {
+            "graded": graded,
+            "max_score": self.max_score(),
+            "published": self.score_published
+        }
 
     def studio_view(self, context=None):
         try:
@@ -128,10 +172,43 @@ class FlexibleGradingXBlock(XBlock):
             log.error("Don't swallow my exceptions", exc_info=True)
             raise
 
+    def staff_grading_data(self):
+        def get_student_data(module):
+            state = json.loads(module.state)
+            return {
+                'module_id': module.id,
+                'username': module.student.username,
+                'email': module.student.email,
+                'published': state.get("score_published"),
+                'comment': state.get("comment", '')
+            }
+
+        query = StudentModule.objects.filter(
+            course_id=self.xmodule_runtime.course_id,
+            module_state_key=self.location
+        )
+
+        return {
+            'assignments': [get_student_data(module) for module in query],
+            'max_score': self.max_score()
+        }
+
+    @XBlock.handler
+    def get_staff_grading_data(self, request, suffix=''):
+        assert self.is_course_staff()
+        return Response(json_body=self.staff_grading_data())
+
     @XBlock.json_handler
     def save_flexible_grader(self, data, suffix=''):
         for name in ('display_name', 'points', 'weight'):
             setattr(self, name, data.get(name, getattr(self, name)))
+
+    def is_course_staff(self):
+        return getattr(self.xmodule_runtime, 'user_is_staff', False)
+
+    def show_staff_grading_interface(self):
+        in_studio_preview = self.scope_ids.user_id is None
+        return self.is_course_staff() and not in_studio_preview
 
 
 def load_resource(resource_path):

@@ -2,43 +2,6 @@
 
 <div class="sga-block" data-state="{{ student_state }}" 
      data-staff="{{ is_course_staff }}">
-  <script type="text/template" id="sga-tmpl">
-    <% if (uploaded) { %>
-      <p><b>File uploaded</b> 
-        <a href="<%= downloadUrl %>"><%= uploaded.filename %></a></p>
-    <% } else { %>
-      <p>No file has been uploaded.</p>
-    <% } %>
-    <% if (graded) { %>
-      <p>Your score is <%= graded.score %> / <%= max_score %><br/>
-        <% if (graded.comment) { %>
-          <b>Instructor comment</b> <%= graded.comment %>
-        <% } %>
-        <% if (annotated) { %><br/>
-          <b>Annotated file from instructor</b>
-          <a href="<%= annotatedUrl %>"><%= annotated.filename %></a>
-        <% } %>
-      </p>
-    <% } else if (uploaded) { %>
-      {% trans "This assignment has not yet been graded." %}
-    <% } %>
-    <% if (upload_allowed) { %>
-    <p>
-      <% if (uploaded) { %>
-        {% trans "Upload a different file" %}
-      <% } else { %>
-        {% trans "Upload your assignment" %}
-      <% } %>
-      <div class="upload">
-        <input class="fileupload" type="file" name="assignment"/>
-        <button>Select a file</button>
-      </div>
-    </p>
-    <% } %>
-    <% if (error) { %>
-      <p class="error"><%= error %></p>
-    <% } %>
-  </script>
 
   <div id="sga-content">
   </div>
@@ -48,46 +11,23 @@
     <table class="gridtable">
       <tr>
         <th>Username</th>
-        <th>Name</th>
-        <th>Filename</th>
-        <th>Uploaded</th>
-        <th>Grade</th>
-        <th>Annotated</th>
+        <th>Email</th>
+        <th>Score</th>
+        <th>Max Score</th>
+        <th>Comment</th>
       </tr>
       <% for (var i = 0; i < assignments.length; i++) { %>
       <%     var assignment = assignments[i]; %>
         <tr id="row-<%= assignment.module_id %>">
           <td><%= assignment.username %></td>
           <td><%= assignment.fullname %></td>
-          <td>
-            <% if (assignment.filename) { %>
-              <a href="<%= downloadUrl %>?module_id=<%= assignment.module_id %>">
-                <%= assignment.filename %>
-              </a>
-            <% } %>
-          </td>
-          <td><%= assignment.timestamp %></td>
-          <td>
-            <%= assignment.score %> /
-            <%= max_score %>
-          </td>
-          <td>
-            <% if (assignment.annotated) { %>
-              <a href="<%= annotatedUrl %>?module_id=<%= assignment.module_id %>">
-                <%= assignment.annotated %>
-              </a>
-            <% } %>
-          </td>
+          <td><%= assignment.score %></td>
+          <td><%= max_score %></td>
+          <td><%= assignment.comment %></td>
           <td>
             <a class="enter-grade-button" href="#{{ id }}-enter-grade">
               {% trans "Enter grade" %}
             </a>
-          </td>
-          <td>
-            <div class="upload">
-              <input class="fileupload" type="file" name="annotated"/>
-              <button>Upload annotated file</button>
-            </div>
           </td>
         </tr>
       <% } %>
