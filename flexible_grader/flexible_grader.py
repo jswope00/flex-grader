@@ -10,6 +10,7 @@ from xblock.fragment import Fragment
 
 
 class FlexibleGradingXBlock(XBlock):
+
     """
     This block defines a grading unit which can then be graded 
     by staff.
@@ -20,8 +21,9 @@ class FlexibleGradingXBlock(XBlock):
 
     display_name = String(
         display_name="Display name",
-        default="Flexible Grading Block", 
-        help="Flexible Grading help.",
+        default="Flex Grader",
+        help="This name appears in the horizontal navigation at the top of "
+             "the page.",
         scope=Scope.settings,
     )
 
@@ -68,9 +70,13 @@ class FlexibleGradingXBlock(XBlock):
                 context
             )
         )
-        fragment.add_css(self.resource_string("static/css/flexible_grader.css"))
-        fragment.add_javascript(self.resource_string("static/js/src/flexible_grader.js"))
+        
+        fragment.add_css(
+            self.resource_string("static/css/flexible_grader.css"))
+        fragment.add_javascript(
+            self.resource_string("static/js/src/flexible_grader.js"))
         fragment.initialize_js('FlexibleGradingXBlock')
+
         return fragment
 
     def studio_view(self, context=None):
@@ -100,7 +106,8 @@ class FlexibleGradingXBlock(XBlock):
                 )
             )
 
-            fragment.add_javascript(self.resource_string("static/js/src/studio.js"))
+            fragment.add_javascript(
+                self.resource_string("static/js/src/studio.js"))
             fragment.initialize_js('FlexibleGradingXBlock')
 
             return fragment
@@ -110,7 +117,7 @@ class FlexibleGradingXBlock(XBlock):
 
     @XBlock.json_handler
     def save_flexible_grader(self, data, suffix=''):
-        for name in ('display_name', 'points', 'weight'):
+        for name in ('display_name', 'points'):
             setattr(self, name, data.get(name, getattr(self, name)))
 
     # TO-DO: change this to create the scenarios you'd like to see in the
