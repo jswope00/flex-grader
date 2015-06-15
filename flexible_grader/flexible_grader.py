@@ -30,6 +30,15 @@ class FlexibleGradingXBlock(XBlock):
         scope=Scope.settings,
     )
 
+    weight = Float(
+        display_name="Problem Weight",
+        help=("Defines the number of points each problem is worth. "
+              "If the value is not set, the problem is worth the sum of the "
+              "option point values."),
+        values={"min":0, "step": .1},
+        scope=Scope.settings
+    )
+
     points = Float(
         display_name="Maximum score",
         help=("Maximum grade score given to assignment by staff."),
@@ -93,7 +102,8 @@ class FlexibleGradingXBlock(XBlock):
                 (field, none_to_empty(getattr(self, field.name)), validator)
                 for field, validator in (
                     (cls.display_name, 'string'),
-                    (cls.points, 'number')
+                    (cls.points, 'number'),
+                    (cls.weight, 'number')
                 )
             )
 
@@ -120,7 +130,7 @@ class FlexibleGradingXBlock(XBlock):
 
     @XBlock.json_handler
     def save_flexible_grader(self, data, suffix=''):
-        for name in ('display_name', 'points'):
+        for name in ('display_name', 'points', 'weight'):
             setattr(self, name, data.get(name, getattr(self, name)))
 
 
