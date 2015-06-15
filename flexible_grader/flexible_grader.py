@@ -123,21 +123,6 @@ class FlexibleGradingXBlock(XBlock):
         for name in ('display_name', 'points'):
             setattr(self, name, data.get(name, getattr(self, name)))
 
-    # TO-DO: change this to create the scenarios you'd like to see in the
-    # workbench while developing your XBlock.
-    @staticmethod
-    def workbench_scenarios():
-        """A canned scenario for display in the workbench."""
-        return [
-            ("FlexibleGradingXBlock",
-             """<vertical_demo>
-                <flexible_grader/>
-                <flexible_grader/>
-                <flexible_grader/>
-                </vertical_demo>
-             """),
-        ]
-
 
 def load_resource(resource_path):
     """
