@@ -3,6 +3,26 @@
 <div class="sga-block" data-state="{{ student_state }}" 
      data-staff="{{ is_course_staff }}">
 
+  <script type="text/template" id="sga-tmpl">
+    <% if (display_name) { %>
+       <h2 class="problem-header"><%= display_name %></h2>
+    <% } %>
+
+    <% if (graded) { %>
+      <div class="problem-progress">(<%= graded.score %> / <%= max_score %> )</div>
+      <p>
+        <% if (graded.comment) { %>
+          <b>Instructor comment</b> <%= graded.comment %>
+        <% } %>
+      </p>
+    <% } else { %>
+      <div class="problem-progress">(0 / <%= max_score %> )</div>
+      <p>
+        {% trans "This assignment has not yet been graded." %}
+      </p>
+    <% } %>
+  </script>
+
   <div id="sga-content">
   </div>
 
@@ -10,17 +30,19 @@
   <script type="text/template" id="sga-grading-tmpl">
     <table class="gridtable">
       <tr>
-        <th>Username</th>
-        <th>Email</th>
-        <th>Score</th>
-        <th>Max Score</th>
-        <th>Comment</th>
+        <th width="10"></th>
+        <th width="auto">Username</th>
+        <th width="auto">Email</th>
+        <th width="40">Score</th>
+        <th width="40">Max Score</th>
+        <th width="200">Comment</th>
       </tr>
       <% for (var i = 0; i < assignments.length; i++) { %>
       <%     var assignment = assignments[i]; %>
         <tr id="row-<%= assignment.module_id %>">
+          <td><input type="checkbox" /></td>
           <td><%= assignment.username %></td>
-          <td><%= assignment.fullname %></td>
+          <td><%= assignment.email %></td>
           <td><%= assignment.score %></td>
           <td><%= max_score %></td>
           <td><%= assignment.comment %></td>
@@ -40,12 +62,13 @@
   </div>
 
   <section aria-hidden="true" class="modal staff-modal" id="{{ id }}-grade">
-    <div class="inner-wrapper" style="color: black">
+    <div class="inner-wrapper" style="color: black; overflow-y:scroll; height:500px;">
       <header><h2>{% trans "Staff Graded Assignment" %}</h2></header>
       <br/>
-      <div id="grade-info" style="display: block;">
+      <div id="grade-info">
         Loading...
       </div>
+      <div>&nbsp;</div>
     </div>
   </section>
 

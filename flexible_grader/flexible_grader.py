@@ -6,6 +6,11 @@ import json
 
 from courseware.models import StudentModule
 
+from student.models import CourseEnrollment, anonymous_id_for_user
+
+from submissions import api as submissions_api
+from submissions.models import StudentItem as SubmissionsStudent
+
 from django.template import Context, Template
 
 from webob.response import Response
@@ -15,6 +20,22 @@ from xblock.fields import Scope, Float, String, Boolean
 from xblock.fragment import Fragment
 
 log = logging.getLogger(__name__)
+
+
+def reify(meth):
+    """
+    Decorator which caches value so it is only computed once.
+    Keyword arguments:
+    inst
+    """
+    def getter(inst):
+        """
+        Set value to meth name in dict and returns value.
+        """
+        value = meth(inst)
+        inst.__dict__[meth.__name__] = value
+        return value
+    return property(getter)
 
 
 class FlexibleGradingXBlock(XBlock):
@@ -40,7 +61,7 @@ class FlexibleGradingXBlock(XBlock):
         help=("Defines the number of points each problem is worth. "
               "If the value is not set, the problem is worth the sum of the "
               "option point values."),
-        values={"min":0, "step": .1},
+        values={"min": 0, "step": .1},
         scope=Scope.settings
     )
 
@@ -60,13 +81,6 @@ class FlexibleGradingXBlock(XBlock):
         scope=Scope.user_state
     )
 
-    score_published = Boolean(
-        display_name="Whether score has been published.",
-        help=("This is a terrible hack, an implementation detail."),
-        default=True,
-        scope=Scope.user_state
-    )
-
     comment = String(
         display_name="Instructor comment",
         default='',
@@ -82,17 +96,18 @@ class FlexibleGradingXBlock(XBlock):
     def max_score(self):
         return self.points
 
+    @reify
+    def block_id(self):
+        """
+        Return the usage_id of the block.
+        """
+        return self.scope_ids.usage_id
+
     def student_view(self, context=None):
         """
         The primary view of the FlexibleGradingXBlock, shown to students
         when viewing courses.
         """
-        if not self.score_published:
-            self.runtime.publish(self, 'grade', {
-                'value': self.score,
-                'max_value': self.max_score()
-            })
-            self.score_published = True
 
         context = {
             "student_state": json.dumps(self.student_state()),
@@ -124,15 +139,16 @@ class FlexibleGradingXBlock(XBlock):
         rendering in client view.
         """
 
-        if self.score is not None:
-            graded = {'score': self.score, 'comment': self.comment}
+        score = self.score
+        if score is not None:
+            graded = {'score': score, 'comment': self.comment}
         else:
             graded = None
 
         return {
+            "display_name": self.display_name,
             "graded": graded,
-            "max_score": self.max_score(),
-            "published": self.score_published
+            "max_score": self.max_score()
         }
 
     def studio_view(self, context=None):
@@ -172,24 +188,79 @@ class FlexibleGradingXBlock(XBlock):
             log.error("Don't swallow my exceptions", exc_info=True)
             raise
 
+    def student_submission_id(self, anonymous_student_id=None):
+        # pylint: disable=no-member
+        """
+        Returns dict required by the submissions app for creating and
+        retrieving submissions for a particular student.
+        """
+        if anonymous_student_id is None:
+            anonymous_student_id = self.xmodule_runtime.anonymous_student_id
+        return {
+            "student_id": anonymous_student_id,
+            "course_id": self.course_id,
+            "item_id": self.block_id,
+            "item_type": 'sga',  # ???
+        }
+
+    def get_submission(self, submission_id=None):
+        """
+        Get student's most recent submission.
+        """
+        submissions = submissions_api.get_submissions(
+            self.student_submission_id(submission_id))
+        if submissions:
+            # If I understand docs correctly, most recent submission should
+            # be first
+            return submissions[0]
+
+    def get_score(self, anonymous_student_id=None):
+        """
+        Return student's current score.
+        """
+        student_item = self.student_submission_id(anonymous_student_id)
+        score = submissions_api.get_score(student_item)
+        if score:
+            return score['points_earned']
+
     def staff_grading_data(self):
-        def get_student_data(module):
+        def get_student_data(user):
+            module, created = StudentModule.objects.get_or_create(
+                course_id=self.course_id,
+                module_state_key=self.location,
+                student=user,
+                defaults={
+                    'state': '{}',
+                    'module_type': self.category,
+                })
+
+            if created:
+                log.info(
+                    "Init for course:%s module:%s student:%s  ",
+                    module.course_id,
+                    module.module_state_key,
+                    module.student.username
+                )
+
             state = json.loads(module.state)
+            anonymous_student_id = anonymous_id_for_user(user, self.course_id)
+            score = self.get_score(anonymous_student_id)
+
             return {
                 'module_id': module.id,
                 'username': module.student.username,
                 'email': module.student.email,
-                'published': state.get("score_published"),
                 'comment': state.get("comment", '')
             }
 
-        query = StudentModule.objects.filter(
-            course_id=self.xmodule_runtime.course_id,
-            module_state_key=self.location
+        enrolled_students = (
+            CourseEnrollment
+            .users_enrolled_in(self.xmodule_runtime.course_id)
         )
 
         return {
-            'assignments': [get_student_data(module) for module in query],
+            'assignments': [get_student_data(student) for student
+                            in enrolled_students],
             'max_score': self.max_score()
         }
 
