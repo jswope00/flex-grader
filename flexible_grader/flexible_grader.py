@@ -74,14 +74,6 @@ class FlexibleGradingXBlock(XBlock):
         scope=Scope.settings
     )
 
-    score = Float(
-        display_name="Grade score",
-        default=None,
-        help=("Grade score given to assignment by staff."),
-        values={"min": 0, "step": .1},
-        scope=Scope.user_state
-    )
-
     comment = String(
         display_name="Instructor comment",
         default='',
@@ -89,12 +81,10 @@ class FlexibleGradingXBlock(XBlock):
         help="Feedback given to student by instructor."
     )
 
-    def resource_string(self, path):
-        """Handy helper for getting resources from our kit."""
-        data = pkg_resources.resource_string(__name__, path)
-        return data.decode("utf8")
-
     def max_score(self):
+        """
+        Return the maximum score possible.
+        """
         return self.points
 
     @reify
@@ -103,91 +93,6 @@ class FlexibleGradingXBlock(XBlock):
         Return the usage_id of the block.
         """
         return self.scope_ids.usage_id
-
-    def student_view(self, context=None):
-        """
-        The primary view of the FlexibleGradingXBlock, shown to students
-        when viewing courses.
-        """
-
-        context = {
-            "student_state": json.dumps(self.student_state()),
-            "id": self.location.name.replace('.', '_')
-        }
-
-        if self.show_staff_grading_interface():
-            context['is_course_staff'] = True
-
-        fragment = Fragment()
-        fragment.add_content(
-            render_template(
-                'templates/flexible_grader/show.html',
-                context
-            )
-        )
-
-        fragment.add_css(
-            self.resource_string("static/css/flexible_grader.css"))
-        fragment.add_javascript(
-            self.resource_string("static/js/src/flexible_grader.js"))
-        fragment.initialize_js('FlexibleGradingXBlock')
-
-        return fragment
-
-    def student_state(self):
-        """
-        Returns a JSON serializable representation of student's state for
-        rendering in client view.
-        """
-
-        score = self.score
-        if score is not None:
-            graded = {'score': score, 'comment': self.comment}
-        else:
-            graded = None
-
-        return {
-            "display_name": self.display_name,
-            "graded": graded,
-            "max_score": self.max_score()
-        }
-
-    def studio_view(self, context=None):
-        try:
-            cls = type(self)
-
-            def none_to_empty(x):
-                return x if x is not None else ''
-
-            edit_fields = (
-                (field, none_to_empty(getattr(self, field.name)), validator)
-                for field, validator in (
-                    (cls.display_name, 'string'),
-                    (cls.points, 'number'),
-                    (cls.weight, 'number')
-                )
-            )
-
-            context = {
-                'fields': edit_fields
-            }
-
-            fragment = Fragment()
-            fragment.add_content(
-                render_template(
-                    'templates/flexible_grader/edit.html',
-                    context
-                )
-            )
-
-            fragment.add_javascript(
-                self.resource_string("static/js/src/studio.js"))
-            fragment.initialize_js('FlexibleGradingXBlock')
-
-            return fragment
-        except:
-            log.error("Don't swallow my exceptions", exc_info=True)
-            raise
 
     def student_submission_id(self, anonymous_student_id=None):
         # pylint: disable=no-member
@@ -224,7 +129,80 @@ class FlexibleGradingXBlock(XBlock):
         if score:
             return score['points_earned']
 
+    @reify
+    def score(self):
+        """
+        Return score from submissions.
+        """
+        return self.get_score()
+
+    def student_view(self, context=None):
+        """
+        The primary view of the FlexibleGradingXBlock, shown to students
+        when viewing courses.
+        """
+
+        context = {
+            "student_state": json.dumps(self.student_state()),
+            "id": self.location.name.replace('.', '_')
+        }
+
+        if self.show_staff_grading_interface():
+            context['is_course_staff'] = True
+            self.update_staff_debug_context(context)
+
+        fragment = Fragment()
+        fragment.add_content(
+            render_template(
+                'templates/flexible_grader/show.html',
+                context
+            )
+        )
+
+        fragment.add_css(_resource("static/css/flexible_grader.css"))
+        fragment.add_javascript(
+            _resource("static/js/src/flexible_grader.js")
+        )
+        fragment.initialize_js('FlexibleGradingXBlock')
+
+        return fragment
+
+    def update_staff_debug_context(self, context):
+        # pylint: disable=no-member
+        """
+        Add context info for the Staff Debug interface.
+        """
+        published = self.start
+        context['is_released'] = published and published < _now()
+        context['location'] = self.location
+        context['category'] = type(self).__name__
+        context['fields'] = [
+            (name, field.read_from(self))
+            for name, field in self.fields.items()]
+
+    def student_state(self):
+        """
+        Returns a JSON serializable representation of student's state for
+        rendering in client view.
+        """
+
+        score = self.score
+        if score is not None:
+            graded = {'score': score, 'comment': self.comment}
+        else:
+            graded = None
+
+        return {
+            "display_name": self.display_name,
+            "graded": graded,
+            "max_score": self.max_score()
+        }
+
     def staff_grading_data(self):
+        """
+        Return student assignment information for display on the
+        grading screen.
+        """
         def get_student_data(user):
             module, created = StudentModule.objects.get_or_create(
                 course_id=self.course_id,
@@ -265,6 +243,42 @@ class FlexibleGradingXBlock(XBlock):
             'max_score': self.max_score()
         }
 
+    def studio_view(self, context=None):
+        try:
+            cls = type(self)
+
+            def none_to_empty(x):
+                return x if x is not None else ''
+
+            edit_fields = (
+                (field, none_to_empty(getattr(self, field.name)), validator)
+                for field, validator in (
+                    (cls.display_name, 'string'),
+                    (cls.points, 'number'),
+                    (cls.weight, 'number')
+                )
+            )
+
+            context = {
+                'fields': edit_fields
+            }
+
+            fragment = Fragment()
+            fragment.add_content(
+                render_template(
+                    'templates/flexible_grader/edit.html',
+                    context
+                )
+            )
+
+            fragment.add_javascript(_resource("static/js/src/studio.js"))
+            fragment.initialize_js('FlexibleGradingXBlock')
+
+            return fragment
+        except:
+            log.error("Don't swallow my exceptions", exc_info=True)
+            raise
+
     @XBlock.handler
     def get_staff_grading_data(self, request, suffix=''):
         # pylint: disable=unused-argument
@@ -289,6 +303,21 @@ class FlexibleGradingXBlock(XBlock):
     def show_staff_grading_interface(self):
         in_studio_preview = self.scope_ids.user_id is None
         return self.is_course_staff() and not in_studio_preview
+
+
+def _resource(path):  # pragma: NO COVER
+    """
+    Handy helper for getting resources from our kit.
+    """
+    data = pkg_resources.resource_string(__name__, path)
+    return data.decode("utf8")
+
+
+def _now():
+    """
+    Get current date and time.
+    """
+    return datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
 
 
 def load_resource(resource_path):
