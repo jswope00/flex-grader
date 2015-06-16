@@ -11,6 +11,7 @@ from student.models import CourseEnrollment, anonymous_id_for_user
 from submissions import api as submissions_api
 from submissions.models import StudentItem as SubmissionsStudent
 
+from django.core.exceptions import PermissionDenied
 from django.template import Context, Template
 
 from webob.response import Response
@@ -266,7 +267,11 @@ class FlexibleGradingXBlock(XBlock):
 
     @XBlock.handler
     def get_staff_grading_data(self, request, suffix=''):
-        assert self.is_course_staff()
+        # pylint: disable=unused-argument
+        """
+        Return the html for the staff grading view
+        """
+        require(self.is_course_staff())
         return Response(json_body=self.staff_grading_data())
 
     @XBlock.json_handler
@@ -275,6 +280,10 @@ class FlexibleGradingXBlock(XBlock):
             setattr(self, name, data.get(name, getattr(self, name)))
 
     def is_course_staff(self):
+        # pylint: disable=no-member
+        """
+         Check if user is course staff.
+        """
         return getattr(self.xmodule_runtime, 'user_is_staff', False)
 
     def show_staff_grading_interface(self):
@@ -297,3 +306,11 @@ def render_template(template_path, context={}):
     template_str = load_resource(template_path)
     template = Template(template_str)
     return template.render(Context(context))
+
+
+def require(assertion):
+    """
+    Raises PermissionDenied if assertion is not true.
+    """
+    if not assertion:
+        raise PermissionDenied
