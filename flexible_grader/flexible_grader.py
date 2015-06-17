@@ -1,8 +1,10 @@
 """TO-DO: Write a description of what this XBlock is."""
 
+import datetime
 import pkg_resources
 import logging
 import json
+import pytz
 
 from courseware.models import StudentModule
 
@@ -17,7 +19,7 @@ from django.template import Context, Template
 from webob.response import Response
 
 from xblock.core import XBlock
-from xblock.fields import Scope, Float, String, Boolean
+from xblock.fields import Scope, Float, String, Boolean, Integer
 from xblock.fragment import Fragment
 
 log = logging.getLogger(__name__)
@@ -66,10 +68,9 @@ class FlexibleGradingXBlock(XBlock):
         scope=Scope.settings
     )
 
-    points = Float(
+    points = Integer(
         display_name="Maximum score",
         help=("Maximum grade score given to assignment by staff."),
-        values={"min": 0, "step": .1},
         default=100,
         scope=Scope.settings
     )
@@ -204,6 +205,12 @@ class FlexibleGradingXBlock(XBlock):
         grading screen.
         """
         def get_student_data(user):
+            # pylint: disable=no-member
+            """
+            Returns a dict of student assignment information along with
+            student id and module id, this information will be used 
+            on grading screen
+            """
             module, created = StudentModule.objects.get_or_create(
                 course_id=self.course_id,
                 module_state_key=self.location,
@@ -223,12 +230,20 @@ class FlexibleGradingXBlock(XBlock):
 
             state = json.loads(module.state)
             anonymous_student_id = anonymous_id_for_user(user, self.course_id)
-            score = self.get_score(anonymous_student_id)
+            student_score = self.get_score(anonymous_student_id)
+            submission_id = ''
+            submission = self.get_submission(anonymous_student_id)
+            if submission:
+                submission_id = submission['uuid']
 
             return {
                 'module_id': module.id,
+                'student_id': anonymous_student_id,
+                'submission_id': submission_id,
                 'username': module.student.username,
+                'fullname': module.student.profile.name,
                 'email': module.student.email,
+                'score': student_score,
                 'comment': state.get("comment", '')
             }
 
@@ -288,10 +303,89 @@ class FlexibleGradingXBlock(XBlock):
         require(self.is_course_staff())
         return Response(json_body=self.staff_grading_data())
 
+    @XBlock.handler
+    def enter_grade(self, request, suffix=''):
+        # pylint: disable=unused-argument
+        """
+        Persist a score for a student given by staff.
+        """
+        require(self.is_course_staff())
+        module = StudentModule.objects.get(pk=request.params['module_id'])
+        state = json.loads(module.state)
+        score = int(request.params['grade'])
+
+        if request.params['submission_id']:
+            uuid = request.params['submission_id']
+        else:
+            anonymous_student_id = (
+                anonymous_id_for_user(module.student, self.course_id)
+            )
+
+            answer = ""
+            student_item = self.student_submission_id(anonymous_student_id)
+            submissions_api.create_submission(student_item, answer)
+            submission = self.get_submission(anonymous_student_id)
+            uuid = submission['uuid']
+
+        submissions_api.set_score(uuid, score, self.max_score())
+        state['comment'] = request.params.get('comment', '')
+        module.state = json.dumps(state)
+        module.save()
+        log.info(
+            "enter_grade for course:%s module:%s student:%s",
+            module.course_id,
+            module.module_state_key,
+            module.student.username
+        )
+
+        return Response(json_body=self.staff_grading_data())
+
+    @XBlock.handler
+    def remove_grade(self, request, suffix=''):
+        # pylint: disable=unused-argument
+        """
+        Reset a students score request by staff.
+        """
+        require(self.is_course_staff())
+        
+        # TODO: implement
+
+        return Response(json_body=self.staff_grading_data())
+
     @XBlock.json_handler
     def save_flexible_grader(self, data, suffix=''):
-        for name in ('display_name', 'points', 'weight'):
-            setattr(self, name, data.get(name, getattr(self, name)))
+        # pylint: disable=unused-argument
+        """
+        Persist block data when updating settings in studio.
+        """
+        self.display_name = data.get('display_name', self.display_name)
+
+        # Validate points before saving
+        points = data.get('points', self.points)
+        # Check that we are an int
+        try:
+            points = int(points)
+        except ValueError:
+            raise JsonHandlerError(400, 'Points must be an integer')
+        # Check that we are positive
+        if points < 0:
+            raise JsonHandlerError(400, 'Points must be a positive integer')
+        self.points = points
+
+        # Validate weight before saving
+        weight = data.get('weight', self.weight)
+        # Check that weight is a float.
+        if weight:
+            try:
+                weight = float(weight)
+            except ValueError:
+                raise JsonHandlerError(400, 'Weight must be a decimal number')
+            # Check that we are positive
+            if weight < 0:
+                raise JsonHandlerError(
+                    400, 'Weight must be a positive decimal number'
+                )
+        self.weight = weight
 
     def is_course_staff(self):
         # pylint: disable=no-member
@@ -301,6 +395,9 @@ class FlexibleGradingXBlock(XBlock):
         return getattr(self.xmodule_runtime, 'user_is_staff', False)
 
     def show_staff_grading_interface(self):
+        """
+        Return if current user is staff and not in studio.
+        """
         in_studio_preview = self.scope_ids.user_id is None
         return self.is_course_staff() and not in_studio_preview
 
