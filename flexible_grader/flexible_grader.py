@@ -310,12 +310,20 @@ class FlexibleGradingXBlock(XBlock):
         Persist a score for a student given by staff.
         """
         require(self.is_course_staff())
-        module = StudentModule.objects.get(pk=request.params['module_id'])
-        state = json.loads(module.state)
-        score = int(request.params['grade'])
 
-        if request.params['submission_id']:
-            uuid = request.params['submission_id']
+        self.submit_grade(module_id=request.params['module_id'],
+                          submission_id=request.params['submission_id'],
+                          score=int(request.params['grade']),
+                          comment=request.params.get('comment', ''))
+
+        return Response(json_body=self.staff_grading_data())
+
+    def submit_grade(self, module_id, submission_id, score, comment):
+        module = StudentModule.objects.get(pk=module_id)
+        state = json.loads(module.state)
+
+        if submission_id:
+            uuid = submission_id
         else:
             anonymous_student_id = (
                 anonymous_id_for_user(module.student, self.course_id)
@@ -328,7 +336,7 @@ class FlexibleGradingXBlock(XBlock):
             uuid = submission['uuid']
 
         submissions_api.set_score(uuid, score, self.max_score())
-        state['comment'] = request.params.get('comment', '')
+        state['comment'] = comment
         module.state = json.dumps(state)
         module.save()
         log.info(
@@ -337,6 +345,20 @@ class FlexibleGradingXBlock(XBlock):
             module.module_state_key,
             module.student.username
         )
+
+    @XBlock.handler
+    def enter_bulk_grade(self, request, suffix=''):
+        # pylint: disable=unused-argument
+        """
+        Persist scores for multiple students given by staff.
+        """
+        require(self.is_course_staff())
+        students = json.loads(request.params['students'])
+        for student in students:
+            self.submit_grade(module_id=student['module_id'],
+                              submission_id=student['submission_id'],
+                              score=int(request.params['grade']),
+                              comment=request.params.get('comment', ''))
 
         return Response(json_body=self.staff_grading_data())
 
@@ -347,7 +369,7 @@ class FlexibleGradingXBlock(XBlock):
         Reset a students score request by staff.
         """
         require(self.is_course_staff())
-        
+
         # TODO: implement
 
         return Response(json_body=self.staff_grading_data())

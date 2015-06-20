@@ -3,6 +3,7 @@ function FlexibleGradingXBlock(runtime, element) {
     function xblock($, _) {
         var getStaffGradingUrl = runtime.handlerUrl(element, 'get_staff_grading_data');
         var enterGradeUrl = runtime.handlerUrl(element, 'enter_grade');
+        var enterBulkGradeUrl = runtime.handlerUrl(element, 'enter_bulk_grade');
         var removeGradeUrl = runtime.handlerUrl(element, 'remove_grade');
         var template = _.template($(element).find("#sga-tmpl").text());
         var gradingTemplate;
@@ -32,14 +33,62 @@ function FlexibleGradingXBlock(runtime, element) {
 
             // Set up grade entry modal
             $(element).find(".enter-grade-button")
-                .leanModal({closeButton: "#enter-grade-cancel"})
+                .leanModal({
+                    closeButton: "#enter-grade-cancel"
+                })
                 .on("click", handleGradeEntry);
+
+            $(element).find("#enter-bulk-grade-button")
+                .leanModal({
+                    closeButton: "#enter-grade-cancel"
+                })
+                .on("click", handleBulkGradeEntry);
+
+            $(element).find("#select-all")
+                .change(selectAll)
+
+            $(element).find(".singles")
+                .change(handleSingleSelection)
+        }
+
+        function handleSingleSelection() {
+            var checkboxes = $(this).closest('table').find(':checkbox');
+            var anyUnchecked = checkboxes.not(':checked,#select-all').length;
+            if (anyUnchecked > 0) {
+                $(element).find("#select-all").prop('checked', false);
+            } else {
+                $(element).find("#select-all").prop('checked', true);
+            }
+
+            var checkedCheckboxes = $(this).closest('table').find(':checkbox:checked');
+            if (checkedCheckboxes.length > 1) {
+                $(element).find("#bulk-grade").show();
+            } else {
+                $(element).find("#bulk-grade").hide();
+            }
+        }
+
+        function selectAll() {
+            var checkboxes = $(this).closest('table').find(':checkbox');
+            if ($(this).is(':checked')) {
+                checkboxes.prop('checked', true);
+            } else {
+                checkboxes.prop('checked', false);
+            }
+
+            var checkedCheckboxes = $(this).closest('table').find(':checkbox:checked');
+            if (checkedCheckboxes.length > 1) {
+                $(element).find("#bulk-grade").show();
+            } else {
+                $(element).find("#bulk-grade").hide();
+            }
         }
 
         function handleGradeEntry() {
             var row = $(this).parents("tr");
             var form = $(element).find("#enter-grade-form");
             $(element).find("#student-name").text(row.data("fullname"));
+            $("#grade-for").show();
             form.find("#module_id-input").val(row.data("module_id"));
             form.find('#submission_id-input').val(row.data('submission_id'));
             form.find("#grade-input").val(row.data("score"));
@@ -50,17 +99,13 @@ function FlexibleGradingXBlock(runtime, element) {
                 event.preventDefault();
                 if (isNaN(score)) {
                     form.find(".error").html("<br/>Grade must be a number.");
-                } 
-                else if (score !== parseInt(score)) {
+                } else if (score !== parseInt(score)) {
                     form.find('.error').html('<br/>Grade must be an integer.');
-                }
-                else if (score < 0) {
+                } else if (score < 0) {
                     form.find(".error").html("<br/>Grade must be positive.");
-                }
-                else if (score > max_score) {
+                } else if (score > max_score) {
                     form.find(".error").html("<br/>Maximum score is " + max_score);
-                }
-                else {
+                } else {
                     // No errors
                     $.post(enterGradeUrl, form.serialize())
                         .success(renderStaffGrading);
@@ -91,6 +136,55 @@ function FlexibleGradingXBlock(runtime, element) {
             //        $('#grade-submissions-button').click();
             //    }, 225);
             //});
+        }
+
+        function handleBulkGradeEntry() {
+            $("#grade-for").hide();
+            $("#comment-input").val('');
+            $("#grade-input").val('');
+
+            var table = $(element).find("#grading-table");
+            var rows = table.find("tr").not(":first");
+            var form = $(element).find("#enter-grade-form");
+            var studentData = [];
+            var i;
+
+            var selectedRows = rows.filter(function(i, e) {
+                return $(':checkbox:checked', this).length > 0;
+            });
+
+            for (i = 0; i < selectedRows.length; i++) {
+                var row = $(selectedRows[i]);
+                studentData.push({
+                    module_id: row.data("module_id"),
+                    submission_id: row.data("submission_id")
+                });
+            }
+
+            form.off("submit").on("submit", function(event) {
+                var max_score = row.parents("#grade-info").data("max_score");
+                var score = Number(form.find("#grade-input").val());
+                event.preventDefault();
+                if (isNaN(score)) {
+                    form.find(".error").html("<br/>Grade must be a number.");
+                } else if (score !== parseInt(score)) {
+                    form.find('.error').html('<br/>Grade must be an integer.');
+                } else if (score < 0) {
+                    form.find(".error").html("<br/>Grade must be positive.");
+                } else if (score > max_score) {
+                    form.find(".error").html("<br/>Maximum score is " + max_score);
+                } else {
+                    // No errors
+                    var data = {
+                        grade: $("#grade-input").val(),
+                        comment: $("#comment-input").val(),
+                        students: JSON.stringify(studentData)
+                    };
+
+                    $.post(enterBulkGradeUrl, $.param(data))
+                        .success(renderStaffGrading);
+                }
+            });
         }
 
         $(function($) { // onLoad
