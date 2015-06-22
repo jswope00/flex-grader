@@ -5,6 +5,7 @@ function FlexibleGradingXBlock(runtime, element) {
         var enterGradeUrl = runtime.handlerUrl(element, 'enter_grade');
         var enterBulkGradeUrl = runtime.handlerUrl(element, 'enter_bulk_grade');
         var removeGradeUrl = runtime.handlerUrl(element, 'remove_grade');
+        var removeBulkGradeUrl = runtime.handlerUrl(element, 'remove_bulk_grade');
         var template = _.template($(element).find("#sga-tmpl").text());
         var gradingTemplate;
 
@@ -14,6 +15,7 @@ function FlexibleGradingXBlock(runtime, element) {
         }
 
         function renderStaffGrading(data) {
+            $("#bulk-grade").hide();
             $(".grade-modal").hide();
 
             if (data.display_name !== '') {
@@ -43,6 +45,9 @@ function FlexibleGradingXBlock(runtime, element) {
                     closeButton: "#enter-grade-cancel"
                 })
                 .on("click", handleBulkGradeEntry);
+
+            $(element).find("#remove-bulk-grade-button")
+                .on("click", handleRemoveBulkGrade);
 
             $(element).find("#select-all")
                 .change(selectAll)
@@ -136,6 +141,34 @@ function FlexibleGradingXBlock(runtime, element) {
             //        $('#grade-submissions-button').click();
             //    }, 225);
             //});
+        }
+
+        function handleRemoveBulkGrade() {
+            $("#grade-for").hide();
+
+            var table = $(element).find("#grading-table");
+            var rows = table.find("tr").not(":first");
+            var studentData = [];
+            var i;
+
+            var selectedRows = rows.filter(function(i, e) {
+                return $(':checkbox:checked', this).length > 0;
+            });
+
+            for (i = 0; i < selectedRows.length; i++) {
+                var row = $(selectedRows[i]);
+                studentData.push({
+                    module_id: row.data("module_id"),
+                    student_id: row.data("student_id")
+                });
+            }
+
+            var data = {
+                students: JSON.stringify(studentData)
+            };
+
+            $.post(removeBulkGradeUrl, $.param(data))
+                .success(renderStaffGrading);
         }
 
         function handleBulkGradeEntry() {

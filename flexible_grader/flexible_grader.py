@@ -393,6 +393,20 @@ class FlexibleGradingXBlock(XBlock):
 
         return Response(json_body=self.staff_grading_data())
 
+    @XBlock.handler
+    def remove_bulk_grade(self, request, suffix=''):
+        # pylint: disable=unused-argument
+        """
+        Reset multiple student's score request by staff.
+        """
+        require(self.is_course_staff())
+        students = json.loads(request.params['students'])
+        for student in students:
+            self.reset_score(module_id=student['module_id'],
+                             student_id=student['student_id'])
+
+        return Response(json_body=self.staff_grading_data())
+
     @XBlock.json_handler
     def save_flexible_grader(self, data, suffix=''):
         # pylint: disable=unused-argument
