@@ -362,6 +362,24 @@ class FlexibleGradingXBlock(XBlock):
 
         return Response(json_body=self.staff_grading_data())
 
+    def reset_score(self, student_id, module_id):
+        # pylint: disable=unused-argument
+        """
+        Reset a student's score.
+        """
+        submissions_api.reset_score(student_id, self.course_id, self.block_id)
+        module = StudentModule.objects.get(pk=module_id)
+        state = json.loads(module.state)
+        state['comment'] = ''
+        module.state = json.dumps(state)
+        module.save()
+        log.info(
+            "remove_grade for course:%s module:%s student:%s",
+            module.course_id,
+            module.module_state_key,
+            module.student.username
+        )
+
     @XBlock.handler
     def remove_grade(self, request, suffix=''):
         # pylint: disable=unused-argument
@@ -369,8 +387,9 @@ class FlexibleGradingXBlock(XBlock):
         Reset a students score request by staff.
         """
         require(self.is_course_staff())
-
-        # TODO: implement
+        student_id = request.params['student_id']
+        module_id = request.params['module_id']
+        self.reset_score(student_id, module_id)
 
         return Response(json_body=self.staff_grading_data())
 
