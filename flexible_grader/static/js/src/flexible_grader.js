@@ -230,7 +230,9 @@ function FlexibleGradingXBlock(runtime, element) {
                 gradingTemplate = _.template(
                     $(element).find("#sga-grading-tmpl").text());
                 block.find("#grade-submissions-button")
-                    .leanModal()
+                    .leanModal({
+                        closeButton: ".modal_close"
+                    })
                     .on("click", function() {
                         $.ajax({
                             url: getStaffGradingUrl,
