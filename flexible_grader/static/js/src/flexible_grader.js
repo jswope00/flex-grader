@@ -25,6 +25,15 @@ function FlexibleGradingXBlock(runtime, element) {
                 .html(gradingTemplate(data))
                 .data(data);
 
+            var table = $(element).find("#grading-table");
+            var max_score = table.parents("#grade-info").data("max_score");
+            $('.grade-input').each(function() {
+                var $this = $(this);
+
+                $this.prop('min', 0);
+                $this.prop('max', max_score);
+            });
+
             // Map data to table rows
             data.assignments.map(function(assignment) {
                 $(element).find("#grade-info #row-" + assignment.module_id)
@@ -66,15 +75,9 @@ function FlexibleGradingXBlock(runtime, element) {
                 }
             });
 
-            var max_score = table.parents("#grade-info").data("max_score");
             var isValid = true;
 
             $('.grade-input').each(function() {
-                var $this = $(this);
-
-                $this.prop('min', 0);
-                $this.prop('max', max_score);
-
                 isValid = isValid && this.checkValidity();
             });
 
