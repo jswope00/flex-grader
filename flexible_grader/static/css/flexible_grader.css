@@ -60,3 +60,8 @@
     height: 14px;
     z-index: 2;
 }
+
+
+:invalid {
+    background-color: #ffdddd;
+}

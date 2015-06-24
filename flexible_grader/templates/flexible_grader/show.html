@@ -28,27 +28,33 @@
 
   {% if is_course_staff %}
   <script type="text/template" id="sga-grading-tmpl">
-    <table id="grading-table" class="gridtable">
+    <table id="grading-table" class="gridtable" style="width: 100%">
       <tr>
-        <th width="10"><input type="checkbox" id="select-all"/></th>
-        <th width="auto">Username</th>
-        <th width="auto">Email</th>
-        <th width="40">Score</th>
-        <th width="40">Max Score</th>
-        <th width="200">Comment</th>
+        <th width="20%">Username</th>
+        <th width="20%">Email</th>
+        <th width="5%">Score</th>
+        <th width="5%">Max Score</th>
+        <th width="18%">Comment</th>
+        <th width="5%">Score</th>
+        <th width="18%">Comment</th>
+        <th width="8%"></th>
       </tr>
       <% for (var i = 0; i < assignments.length; i++) { %>
       <%     var assignment = assignments[i]; %>
         <tr id="row-<%= assignment.module_id %>">
-          <td><input type="checkbox" class="singles" /></td>
           <td><%= assignment.username %></td>
           <td><%= assignment.email %></td>
           <td><%= assignment.score %></td>
           <td><%= max_score %></td>
           <td><%= assignment.comment %></td>
+          <td style="padding: 5px;">
+            <input type="number" class="grade-input" id="grade-input-row-<%= assignment.module_id %>" 
+              style="height: 95%; width: 90%"/>
+          </td>
+          <td><input class="comment-input" type="text" data-parent="grade-input-row-<%= assignment.module_id %>" /></td>
           <td>
-            <a class="enter-grade-button button" href="#{{ id }}-enter-grade">
-              {% trans "Enter grade" %}
+            <a class="remove-grade-button button" href="#">
+              {% trans "Clear" %}
             </a>
           </td>
         </tr>
@@ -68,13 +74,15 @@
       <header><h2>{% trans "Staff Graded Assignment" %}</h2></header>
       <a class="modal_close" href="#">X</a>
       <br/>
-      <div id="bulk-grade" style="display:none">
-        <a id="enter-bulk-grade-button" class="button" href="#{{ id }}-enter-grade">
-          {% trans "Enter bulk grade" %}
+      <div id="submit-grade">
+        <a id="submit-grade-button" class="button" href="#">
+          {% trans "Submit" %}
         </a>
-        <a id="remove-bulk-grade-button" class="button" href="#">
-          {% trans "Remove bulk grade" %}
-        </a>
+      </div>
+      <br/>
+      <div class="error" style="display: none;">
+        <i class="icon-exclamation-sign" style="color: sienna;"></i>
+        <span class="message-error">Cannot submit form due to invalid data.</span>
       </div>
       <br/>
       <div id="grade-info">
@@ -105,32 +113,6 @@
           {% endfor %}
         </table><br/>
         category = {{category}}
-      </div>
-    </div>
-  </section>
-
-  <section aria-hidden="true" class="modal grade-modal" id="{{ id }}-enter-grade">
-    <div class="inner-wrapper" style="color: black">
-      <header><h2>{% trans "Enter Grade" %}</h2></header>
-      <br/>
-      <div style="display: block;">
-        <form id="enter-grade-form">
-          <input id="module_id-input" type="hidden" name="module_id"/>
-          <input id="submission_id-input" type="hidden" name="submission_id"/>
-          <div id="grade-for">Grade for <span id="student-name"/></div>
-          <div>Grade: <input id="grade-input" name="grade"/>
-            <span class="error"></span></div>
-          <div>Comment: <textarea id="comment-input" name="comment" rows="4"></textarea></div>
-          <div>
-            <button type="submit">{% trans "Submit" %}</button>
-            <button type="button" id="enter-grade-cancel">
-              {% trans "Cancel" %}
-            </button>
-            <button type="button" id="remove-grade">
-              {% trans "Remove grade" %}
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   </section>

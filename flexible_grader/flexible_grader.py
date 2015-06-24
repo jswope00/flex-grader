@@ -303,21 +303,6 @@ class FlexibleGradingXBlock(XBlock):
         require(self.is_course_staff())
         return Response(json_body=self.staff_grading_data())
 
-    @XBlock.handler
-    def enter_grade(self, request, suffix=''):
-        # pylint: disable=unused-argument
-        """
-        Persist a score for a student given by staff.
-        """
-        require(self.is_course_staff())
-
-        self.submit_grade(module_id=request.params['module_id'],
-                          submission_id=request.params['submission_id'],
-                          score=int(request.params['grade']),
-                          comment=request.params.get('comment', ''))
-
-        return Response(json_body=self.staff_grading_data())
-
     def submit_grade(self, module_id, submission_id, score, comment):
         module = StudentModule.objects.get(pk=module_id)
         state = json.loads(module.state)
@@ -347,7 +332,7 @@ class FlexibleGradingXBlock(XBlock):
         )
 
     @XBlock.handler
-    def enter_bulk_grade(self, request, suffix=''):
+    def enter_grade(self, request, suffix=''):
         # pylint: disable=unused-argument
         """
         Persist scores for multiple students given by staff.
@@ -357,8 +342,8 @@ class FlexibleGradingXBlock(XBlock):
         for student in students:
             self.submit_grade(module_id=student['module_id'],
                               submission_id=student['submission_id'],
-                              score=int(request.params['grade']),
-                              comment=request.params.get('comment', ''))
+                              score=int(student['grade']),
+                              comment=student.get('comment', ''))
 
         return Response(json_body=self.staff_grading_data())
 
@@ -390,20 +375,6 @@ class FlexibleGradingXBlock(XBlock):
         student_id = request.params['student_id']
         module_id = request.params['module_id']
         self.reset_score(student_id, module_id)
-
-        return Response(json_body=self.staff_grading_data())
-
-    @XBlock.handler
-    def remove_bulk_grade(self, request, suffix=''):
-        # pylint: disable=unused-argument
-        """
-        Reset multiple student's score request by staff.
-        """
-        require(self.is_course_staff())
-        students = json.loads(request.params['students'])
-        for student in students:
-            self.reset_score(module_id=student['module_id'],
-                             student_id=student['student_id'])
 
         return Response(json_body=self.staff_grading_data())
 
