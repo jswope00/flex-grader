@@ -11,6 +11,12 @@ To install the flex-grader XBlock, get the source to the /edx/app/edxapp/ folder
 sudo -u edxapp /edx/bin/pip.edxapp install flex-grader/
 ```
 
+To upgrade an existing installation of this XBlock, fetch the latest code and then type:
+
+```bash
+sudo -u edxapp /edx/bin/pip.edxapp install -U --no-deps flex-grader/
+```
+
 Enabling in Studio
 ------------------
 
