@@ -8,7 +8,7 @@ Installation
 To install the flex-grader XBlock, get the source to the /edx/app/edxapp/ folder and execute the following command:
 
 ```bash
-sudo -u edxapp /edx/bin/pip.edxapp install flexible_grader/
+sudo -u edxapp /edx/bin/pip.edxapp install flex-grader/
 ```
 
 Enabling in Studio
