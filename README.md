@@ -14,7 +14,7 @@ sudo -u edxapp /edx/bin/pip.edxapp install flexible_grader/
 Enabling in Studio
 ------------------
 
-You can enable the Drag and Drop XBlock in studio through the advanced
+You can enable the flex-grader XBlock in studio through the advanced
 settings.
 
 1. From the main page of a specific course, navigate to `Settings ->
