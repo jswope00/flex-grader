@@ -62,6 +62,13 @@
     </table>
   </script>
 
+  <script type="text/template" id="sga-error-tmpl">
+    <div class="error">
+      <i class="icon-exclamation-sign" style="color: sienna;"></i>
+      <span class="message-error"><%= error %></span>
+    </div>
+  </script>
+
   <div aria-hidden="true" class="wrap-instructor-info">
     <a class="instructor-info-action" id="grade-submissions-button"
        href="#{{ id }}-grade">{% trans "Grade Submissions" %}</a>

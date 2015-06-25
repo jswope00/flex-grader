@@ -5,6 +5,7 @@ function FlexibleGradingXBlock(runtime, element) {
         var enterGradeUrl = runtime.handlerUrl(element, 'enter_grade');
         var removeGradeUrl = runtime.handlerUrl(element, 'remove_grade');
         var template = _.template($(element).find("#sga-tmpl").text());
+        var errorTemplate = _.template($(element).find("#sga-error-tmpl").text());
         var gradingTemplate;
 
         function render(state) {
@@ -13,6 +14,14 @@ function FlexibleGradingXBlock(runtime, element) {
         }
 
         function renderStaffGrading(data) {
+
+            if (data.hasOwnProperty('error')) {
+                $(element).find("#grade-info")
+                    .html(errorTemplate(data));
+
+                return;
+            }
+
             $("#bulk-grade").hide();
             $(".grade-modal").hide();
 
