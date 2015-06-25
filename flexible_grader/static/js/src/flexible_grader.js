@@ -13,8 +13,6 @@ function FlexibleGradingXBlock(runtime, element) {
         }
 
         function renderStaffGrading(data) {
-            $.unblockUI();
-
             if (data.display_name !== '') {
                 $('.sga-block .display_name').html(data.display_name);
             }
@@ -23,6 +21,8 @@ function FlexibleGradingXBlock(runtime, element) {
             $(element).find("#grade-info")
                 .html(gradingTemplate(data))
                 .data(data);
+
+            $.unblockUI();
 
             var table = $(element).find("#grading-table");
             var max_score = table.parents("#grade-info").data("max_score");
