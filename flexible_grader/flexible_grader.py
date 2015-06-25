@@ -160,10 +160,23 @@ class FlexibleGradingXBlock(XBlock):
             )
         )
 
+        data = {
+            "image_url": self.runtime.local_resource_url(
+                self, 'public/images/spinner.gif'
+            )
+        }
+
+        loader_css = """
+        .sga-spinner-icon {{ 
+            background: url('{image_url}') no-repeat left center;
+            padding-right: 20px;
+         }}
+        """.format(**data)
+
+        fragment.add_css(loader_css)
         fragment.add_css(_resource("static/css/flexible_grader.css"))
-        fragment.add_javascript(
-            _resource("static/js/src/flexible_grader.js")
-        )
+        fragment.add_javascript(_resource("static/js/src/flexible_grader.js"))
+        fragment.add_javascript(_resource("static/js/src/jquery.blockUI.js"))
         fragment.initialize_js('FlexibleGradingXBlock')
 
         return fragment

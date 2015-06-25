@@ -13,8 +13,7 @@ function FlexibleGradingXBlock(runtime, element) {
         }
 
         function renderStaffGrading(data) {
-            $("#bulk-grade").hide();
-            $(".grade-modal").hide();
+            $.unblockUI();
 
             if (data.display_name !== '') {
                 $('.sga-block .display_name').html(data.display_name);
@@ -54,6 +53,12 @@ function FlexibleGradingXBlock(runtime, element) {
             var url = removeGradeUrl + '?module_id=' +
                 row.data('module_id') + '&student_id=' +
                 row.data('student_id');
+
+            $.blockUI({
+                message: $('#sga-loader'),
+                baseZ: 11001
+            });
+
             $.get(url).success(renderStaffGrading);
         }
 
@@ -107,6 +112,11 @@ function FlexibleGradingXBlock(runtime, element) {
             var data = {
                 students: JSON.stringify(studentData)
             };
+
+            $.blockUI({
+                message: $('#sga-loader'),
+                baseZ: 11001
+            });
 
             $.post(enterGradeUrl, $.param(data))
                 .success(renderStaffGrading);
