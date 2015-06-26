@@ -44,9 +44,9 @@
         <tr id="row-<%= assignment.module_id %>">
           <td><%= assignment.username %></td>
           <td><%= assignment.email %></td>
-          <td><%= assignment.score %></td>
+          <td class="sga-score"><%= assignment.score %></td>
           <td><%= max_score %></td>
-          <td><%= assignment.comment %></td>
+          <td class="sga-comment"><%= assignment.comment %></td>
           <td style="padding: 5px;">
             <input type="number" class="grade-input" id="grade-input-row-<%= assignment.module_id %>" 
               style="height: 95%; width: 90%"/>
@@ -90,7 +90,7 @@
       </div>
       <br/>
       <div id="grade-info">
-        Loading...
+        &nbsp;
       </div>
       <div>&nbsp;</div>
     </div>
