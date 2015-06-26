@@ -19,6 +19,7 @@ from django.template import Context, Template
 from webob.response import Response
 
 from xblock.core import XBlock
+from xblock.exceptions import JsonHandlerError
 from xblock.fields import Scope, Float, String, Boolean, Integer
 from xblock.fragment import Fragment
 
