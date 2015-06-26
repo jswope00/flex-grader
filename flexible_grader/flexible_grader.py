@@ -118,7 +118,7 @@ class FlexibleGradingXBlock(XBlock):
         Get student's most recent submission.
         """
         submissions = submissions_api.get_submissions(
-            self.student_submission_id(submission_id))
+            self.student_submission_id(submission_id), limit=1)
         if submissions:
             # If I understand docs correctly, most recent submission should
             # be first
@@ -367,7 +367,8 @@ class FlexibleGradingXBlock(XBlock):
                               score=int(student['grade']),
                               comment=student.get('comment', ''))
 
-        return Response(json_body=self.staff_grading_data())
+        result = {'success': True}
+        return Response(json_body=result)
 
     def reset_score(self, student_id, module_id):
         # pylint: disable=unused-argument
@@ -397,8 +398,8 @@ class FlexibleGradingXBlock(XBlock):
         student_id = request.params['student_id']
         module_id = request.params['module_id']
         self.reset_score(student_id, module_id)
-
-        return Response(json_body=self.staff_grading_data())
+        result = {'success': True}
+        return Response(json_body=result)
 
     @XBlock.json_handler
     def save_flexible_grader(self, data, suffix=''):

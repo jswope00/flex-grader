@@ -67,12 +67,23 @@ function FlexibleGradingXBlock(runtime, element) {
                 baseZ: 11001
             });
 
-            $.get(url).success(renderStaffGrading);
+            $.get(url)
+                .success(function() {
+                    $(".grade-input", row).val('');
+                    $(".grade-input", row).prop('required', false);
+
+                    $(".comment-input", row).val('');
+
+                    row.find('.sga-score').empty();
+                    row.find('.sga-comment').empty();
+
+                    $.unblockUI();
+                });
+
         }
 
         function submitGrade() {
             var table = $(element).find("#grading-table");
-            var rows = table.find("tr").not(":first");
             var studentData = [];
             var missingData = false;
             var i;
@@ -127,7 +138,24 @@ function FlexibleGradingXBlock(runtime, element) {
             });
 
             $.post(enterGradeUrl, $.param(data))
-                .success(renderStaffGrading);
+                .success(function() {
+                    // update the UI
+                    selectedRows.each(function() {
+                        var $this = $(this);
+                        var score = $(".grade-input", $this).val();
+                        var comment = $(".comment-input", $this).val();
+
+                        $this.find('.sga-score').html(score);
+                        $this.find('.sga-comment').html(comment);
+
+                        $(".grade-input", $this).val('');
+                        $(".grade-input", $this).prop('required', false);
+
+                        $(".comment-input", $this).val('');
+                    });
+
+                    $.unblockUI();
+                });
         }
 
         $(function($) { // onLoad
@@ -144,6 +172,13 @@ function FlexibleGradingXBlock(runtime, element) {
                         closeButton: ".modal_close"
                     })
                     .on("click", function() {
+                        $(element).find("#grade-info").empty();
+
+                        $.blockUI({
+                            message: $('#sga-loader'),
+                            baseZ: 11001
+                        });
+
                         $.ajax({
                             url: getStaffGradingUrl,
                             success: renderStaffGrading
