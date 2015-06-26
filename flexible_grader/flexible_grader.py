@@ -52,6 +52,8 @@ class FlexibleGradingXBlock(XBlock):
     has_score = True
     icon_class = 'problem'
 
+    USERS_LIMIT = 1000
+
     display_name = String(
         display_name="Display name",
         default="Flex Grader",
@@ -252,6 +254,12 @@ class FlexibleGradingXBlock(XBlock):
             CourseEnrollment
             .users_enrolled_in(self.xmodule_runtime.course_id)
         )
+
+        if len(enrolled_students) > self.USERS_LIMIT:
+            return {
+                "error": ("This module cannot be accessed with over {0} "
+                          " users in the course.").format(self.USERS_LIMIT)
+            }
 
         return {
             'assignments': [get_student_data(student) for student
