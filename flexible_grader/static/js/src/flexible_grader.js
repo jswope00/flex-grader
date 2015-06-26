@@ -14,16 +14,12 @@ function FlexibleGradingXBlock(runtime, element) {
         }
 
         function renderStaffGrading(data) {
-
             if (data.hasOwnProperty('error')) {
                 $(element).find("#grade-info")
                     .html(errorTemplate(data));
 
                 return;
             }
-
-            $("#bulk-grade").hide();
-            $(".grade-modal").hide();
 
             if (data.display_name !== '') {
                 $('.sga-block .display_name').html(data.display_name);
@@ -33,6 +29,8 @@ function FlexibleGradingXBlock(runtime, element) {
             $(element).find("#grade-info")
                 .html(gradingTemplate(data))
                 .data(data);
+
+            $.unblockUI();
 
             var table = $(element).find("#grading-table");
             var max_score = table.parents("#grade-info").data("max_score");
@@ -63,6 +61,12 @@ function FlexibleGradingXBlock(runtime, element) {
             var url = removeGradeUrl + '?module_id=' +
                 row.data('module_id') + '&student_id=' +
                 row.data('student_id');
+
+            $.blockUI({
+                message: $('#sga-loader'),
+                baseZ: 11001
+            });
+
             $.get(url).success(renderStaffGrading);
         }
 
@@ -116,6 +120,11 @@ function FlexibleGradingXBlock(runtime, element) {
             var data = {
                 students: JSON.stringify(studentData)
             };
+
+            $.blockUI({
+                message: $('#sga-loader'),
+                baseZ: 11001
+            });
 
             $.post(enterGradeUrl, $.param(data))
                 .success(renderStaffGrading);
