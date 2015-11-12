@@ -264,7 +264,7 @@ class FlexibleGradingXBlock(XBlock):
             }
 
         enrolled_students = (
-            CourseEnrollment
+            CourseEnrollment.objects
             .users_enrolled_in(self.xmodule_runtime.course_id)
         )
 
