@@ -6,9 +6,12 @@ import logging
 import json
 import pytz
 
+from django.http import HttpResponse
+from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from courseware.models import StudentModule
-
+from django.contrib.auth.models import User
 from student.models import CourseEnrollment, anonymous_id_for_user
+from student.models import UserProfile, unique_id_for_user
 
 from submissions import api as submissions_api
 from submissions.models import StudentItem as SubmissionsStudent
@@ -22,7 +25,10 @@ from xblock.core import XBlock
 from xblock.exceptions import JsonHandlerError
 from xblock.fields import Scope, Float, String, Boolean, Integer
 from xblock.fragment import Fragment
+from django.views.decorators.csrf import csrf_exempt   
+import re
 
+import csv
 log = logging.getLogger(__name__)
 
 
@@ -70,7 +76,6 @@ class FlexibleGradingXBlock(XBlock):
         values={"min": 0, "step": .1},
         scope=Scope.settings
     )
-
     points = Integer(
         display_name="Maximum score",
         help=("Maximum grade score given to assignment by staff."),
@@ -84,6 +89,73 @@ class FlexibleGradingXBlock(XBlock):
         scope=Scope.user_state,
         help="Feedback given to student by instructor."
     )
+    #docfile = models.FileField(upload_to='documents/%Y/%m/%d')
+
+    @XBlock.handler
+    @csrf_exempt
+    def import_flex_grader(self, request, suffix=''):
+
+    	#print 'my import url '
+	updated_list = []
+
+	counter = 0 
+	reader =  csv.reader(request._request.FILES.get('csv_file').file)
+	#for row in reader:
+	#    print len(row)
+	#print '=============================='
+	for row in reader:
+	    comment = ''
+	    print row
+	    if verify_email(row[0]) and row[1] != '' and int(row[1]) <= self.max_score():
+		for num in range(3,len(row)):
+		    comment = comment +','+row[num]
+		    print comment 
+		try :
+    	            user = User.objects.get(email=row[0])
+   	            module, created = StudentModule.objects.get_or_create(
+                    course_id=self.course_id,
+                    module_state_key=self.location,
+                    student=user,
+                    defaults={
+                    'state': '{}',
+                    'module_type': self.category,
+                    })
+	        
+	            self.submit_grade(module_id=module.id,
+                              submission_id=None,
+                              score=int(row[1]),
+                              comment=comment[1:])
+		    counter = counter + 1
+		    updated_list.append((module.id,row[1],comment[1:]))
+		except: 
+		    pass
+	    else:
+		print 'not a valid row ',row
+	print updated_list
+	return  Response(json_body=updated_list)
+
+    @XBlock.handler
+    def export_flex_grader(self, request, suffix=''):
+    	"""
+    	Respond with 2-column CSV output of user-id, anonymized-user-id
+   	"""
+    	data_list = self.staff_grading_data()
+    	    	
+    	course_id = 'course-v1:Knsysy+CS400+2016'
+
+    	course_id = SlashSeparatedCourseKey.from_deprecated_string(course_id)
+    	max_score = data_list['max_score']
+    	csv_rows = [[ s['email'],s['score'], max_score, s['comment'] ] for s  in data_list['assignments'] ]
+    	#max_score = data_list['max_score']
+    	#print csv_rows , '---------------------------'
+    	#students = User.objects.filter(
+        #	courseenrollment__course_id=course_id,
+    	#	).order_by('id')
+    	#header = ['User ID', 'Anonymized User ID', 'Course Specific Anonymized User ID']
+    	#rows = [[s.id, unique_id_for_user(s, save=False), anonymous_id_for_user(s, course_id, save=False)] for s in students]
+        #print rows,'----------------------------'
+    	return download_csv(csv_rows, max_score) 
+
 
     def max_score(self):
         """
@@ -325,6 +397,8 @@ class FlexibleGradingXBlock(XBlock):
         require(self.is_course_staff())
         return Response(json_body=self.staff_grading_data())
 
+
+
     def submit_grade(self, module_id, submission_id, score, comment):
         module = StudentModule.objects.get(pk=module_id)
         state = json.loads(module.state)
@@ -459,6 +533,7 @@ def _resource(path):  # pragma: NO COVER
     return data.decode("utf8")
 
 
+
 def _now():
     """
     Get current date and time.
@@ -489,3 +564,34 @@ def require(assertion):
     """
     if not assertion:
         raise PermissionDenied
+
+
+def download_csv(data_list, max_score):
+    response = Response(content_type='text/csv')
+    response.app_iter = list2csv(data_list, max_score)
+    response.content_disposition = 'attachment; filename=course_data.csv'
+    return response
+
+
+def list2csv(rows, max_score):
+    """
+    Convert a list to a CSV string (single row)
+    """
+    print type(rows)
+    print len(rows)
+    from cStringIO import StringIO
+    import unicodecsv
+    f = StringIO()
+    writer = unicodecsv.writer(f, encoding='utf-8')
+    writer.writerow(['Email','Score','Max Score', 'Comment'])
+    for row in rows:
+        writer.writerow(row)
+    f.seek(0)
+    return f.read()
+
+def verify_email(email_address):
+    match = re.match('^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,4})$', email_address)
+    if match == None:
+	return False
+    else:
+	return True 

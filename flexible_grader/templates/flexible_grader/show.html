@@ -28,6 +28,14 @@
 
   {% if is_course_staff %}
   <script type="text/template" id="sga-grading-tmpl">
+<form style="padding:0" action="javascript:" enctype="multipart/form-data" id="import_csv_frm" method="post" accept-charset="utf-8" onsubmit="return uploadcsv()">
+{{ csrf_token }}
+<table class="pull-right"><tr><td><input type="button" id="export_grade_data" value="Export" /></td>
+  <td><input name="csv_file" style="display:none"  title="Import" type="file" id="import_grade_data"  /><input value="Import" type="button" class="button" id="import_grade_button"/>
+ </td></tr></table>
+
+</form>
+
     <table id="grading-table" class="gridtable" style="width: 100%">
       <tr>
         <th width="20%">Username</th>

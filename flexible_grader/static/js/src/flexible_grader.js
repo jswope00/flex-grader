@@ -1,12 +1,18 @@
+var import_url =''
+
 /* Javascript for FlexibleGradingXBlock. */
 function FlexibleGradingXBlock(runtime, element) {
     function xblock($, _) {
         var getStaffGradingUrl = runtime.handlerUrl(element, 'get_staff_grading_data');
         var enterGradeUrl = runtime.handlerUrl(element, 'enter_grade');
+	var enterexportUrl = runtime.handlerUrl(element, 'export_flex_grader');
+        var enterimportUrl = runtime.handlerUrl(element, 'import_flex_grader');
         var removeGradeUrl = runtime.handlerUrl(element, 'remove_grade');
         var template = _.template($(element).find("#sga-tmpl").text());
         var errorTemplate = _.template($(element).find("#sga-error-tmpl").text());
         var gradingTemplate;
+	import_url = enterimportUrl
+	//console.log('import_flex_grader');
 
         function render(state) {
             // Render template
@@ -54,7 +60,46 @@ function FlexibleGradingXBlock(runtime, element) {
             $(element).find(".remove-grade-button")
                 .off()
                 .on("click", clearGrade);
-        }
+       
+
+	$(element).find("#import_grade_data")
+                .off()
+                .on("change", importcsv);
+ 
+	$(element).find("#import_grade_button")
+                .off()
+                .on("click", importcsv_click);
+     
+
+        $(element).find("#export_grade_data")
+                .off()
+                .on("click", exportcsv);
+
+
+	 }
+
+         function exportcsv()			
+ 		{
+		console.log(enterexportUrl)
+	        window.location = enterexportUrl;
+
+		}
+
+
+	function importcsv()
+	{
+	//debugger;
+	console.log('form submit')
+	$('#import_csv_frm').submit()
+	}
+
+
+	function importcsv_click()
+	{	$('#import_grade_data').trigger('click');
+	
+	}
+
+
 
         function clearGrade() {
             var row = $(this).parents("tr");
@@ -192,3 +237,68 @@ function FlexibleGradingXBlock(runtime, element) {
 
     xblock($, _);
 }
+
+
+function uploadcsv()
+        {
+//debugger;
+
+var csv_file = $('#import_grade_data');
+
+
+        var fileName = csv_file.val();
+        var ext = fileName.substring(fileName.lastIndexOf('.') + 1);
+	if (ext !='csv')
+{
+
+	alert('Please upload CSV file');
+return false ;
+}
+
+var form = $('#import_csv_frm');
+//var myform  = new FormData(form);
+var myform  = new FormData();
+myform.append('csv_file', $('input[type=file]')[0].files[0]);
+
+ $.blockUI({
+                message: $('#sga-loader'),
+                baseZ: 11001
+            });
+
+$.ajax({
+    url: import_url,
+    type: 'POST',
+    data: myform,
+    cache: false,
+    processData: false,
+    contentType: false,
+    success: function(data) {
+
+
+$.unblockUI();
+$('input[type=file]').val('');
+if(data.length==0)
+{
+alert('CSV upload failed. See system admin')
+}
+
+else
+{
+for (var i = 0; i < data.length; i++) { 
+console.log(data[i][0])
+
+$('#row-'+data[i][0]).find('.sga-score').html(data[i][1]);
+$('#row-'+data[i][0]).find('.sga-comment').html(data[i][2]);
+
+}
+
+alert('CSV upload successful. '+data.length+' entries updated');
+
+}
+
+    }
+});
+
+        
+        return false
+        }
