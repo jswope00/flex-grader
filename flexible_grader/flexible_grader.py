@@ -6,7 +6,7 @@ import logging
 import json
 import pytz
 
-from django.http import HttpResponse
+#from django.http import HttpResponse
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from courseware.models import StudentModule
 from django.contrib.auth.models import User
@@ -25,7 +25,7 @@ from xblock.core import XBlock
 from xblock.exceptions import JsonHandlerError
 from xblock.fields import Scope, Float, String, Boolean, Integer
 from xblock.fragment import Fragment
-from django.views.decorators.csrf import csrf_exempt   
+#from django.views.decorators.csrf import csrf_exempt   
 import re
 
 import csv
@@ -92,20 +92,15 @@ class FlexibleGradingXBlock(XBlock):
     #docfile = models.FileField(upload_to='documents/%Y/%m/%d')
 
     @XBlock.handler
-    @csrf_exempt
     def import_flex_grader(self, request, suffix=''):
 
-    	#print 'my import url '
+    	
 	updated_list = []
 
 	counter = 0 
 	reader =  csv.reader(request._request.FILES.get('csv_file').file)
-	#for row in reader:
-	#    print len(row)
-	#print '=============================='
 	for row in reader:
 	    comment = ''
-	    print row
 	    if verify_email(row[0]) and row[1] != '' and int(row[1]) <= self.max_score():
 		for num in range(3,len(row)):
 		    comment = comment +','+row[num]
@@ -130,8 +125,7 @@ class FlexibleGradingXBlock(XBlock):
 		except: 
 		    pass
 	    else:
-		print 'not a valid row ',row
-	print updated_list
+		pass
 	return  Response(json_body=updated_list)
 
     @XBlock.handler
@@ -140,20 +134,10 @@ class FlexibleGradingXBlock(XBlock):
     	Respond with 2-column CSV output of user-id, anonymized-user-id
    	"""
     	data_list = self.staff_grading_data()
-    	    	
-    	course_id = 'course-v1:Knsysy+CS400+2016'
-
-    	course_id = SlashSeparatedCourseKey.from_deprecated_string(course_id)
+    	#course_id = 'course-v1:Knsysy+CS400+2016'
+    	#course_id = SlashSeparatedCourseKey.from_deprecated_string(course_id)
     	max_score = data_list['max_score']
     	csv_rows = [[ s['email'],s['score'], max_score, s['comment'] ] for s  in data_list['assignments'] ]
-    	#max_score = data_list['max_score']
-    	#print csv_rows , '---------------------------'
-    	#students = User.objects.filter(
-        #	courseenrollment__course_id=course_id,
-    	#	).order_by('id')
-    	#header = ['User ID', 'Anonymized User ID', 'Course Specific Anonymized User ID']
-    	#rows = [[s.id, unique_id_for_user(s, save=False), anonymous_id_for_user(s, course_id, save=False)] for s in students]
-        #print rows,'----------------------------'
     	return download_csv(csv_rows, max_score) 
 
 
@@ -577,8 +561,6 @@ def list2csv(rows, max_score):
     """
     Convert a list to a CSV string (single row)
     """
-    print type(rows)
-    print len(rows)
     from cStringIO import StringIO
     import unicodecsv
     f = StringIO()
