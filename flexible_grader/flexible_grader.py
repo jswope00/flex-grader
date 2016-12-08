@@ -94,39 +94,34 @@ class FlexibleGradingXBlock(XBlock):
     @XBlock.handler
     def import_flex_grader(self, request, suffix=''):
 
-    	
-	updated_list = []
+        updated_list = []
 
-	counter = 0 
-	reader =  csv.reader(request._request.FILES.get('csv_file').file)
-	for row in reader:
-	    comment = ''
-	    if verify_email(row[0]) and row[1] != '' and int(row[1]) <= self.max_score():
-		for num in range(3,len(row)):
-		    comment = comment +','+row[num]
-		    print comment 
-		try :
-    	            user = User.objects.get(email=row[0])
-   	            module, created = StudentModule.objects.get_or_create(
-                    course_id=self.course_id,
-                    module_state_key=self.location,
-                    student=user,
-                    defaults={
-                    'state': '{}',
-                    'module_type': self.category,
-                    })
-	        
-	            self.submit_grade(module_id=module.id,
-                              submission_id=None,
-                              score=int(row[1]),
-                              comment=comment[1:])
-		    counter = counter + 1
-		    updated_list.append((module.id,row[1],comment[1:]))
-		except: 
-		    pass
-	    else:
-		pass
-	return  Response(json_body=updated_list)
+        reader =  csv.reader(request._request.FILES.get('csv_file').file)
+        for row in reader:
+            comment = ''
+            try:
+                if int(row[1]) <= self.max_score():
+                    for num in range(3,len(row)):
+                        comment = comment +','+row[num]
+                    user = User.objects.get(email=row[0])
+                    module, created = StudentModule.objects.get_or_create(
+                        course_id=self.course_id,
+                        module_state_key=self.location,
+                        student=user,
+                        defaults={
+                                'state': '{}',
+                                'module_type': self.category,
+                        })
+                    self.submit_grade(module_id=module.id,
+                          submission_id=None,
+                          score=int(row[1]),
+                          comment=comment[1:])
+                    updated_list.append((module.id,row[1],comment[1:]))
+                else:
+                    pass
+            except:
+                pass
+        return  Response(json_body=updated_list)
 
     @XBlock.handler
     def export_flex_grader(self, request, suffix=''):
