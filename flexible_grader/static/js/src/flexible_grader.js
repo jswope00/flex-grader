@@ -157,11 +157,10 @@ function FlexibleGradingXBlock(runtime, element) {
                 $(element).find('.error').hide();
             }
 
-            var selectedRows = table.find('tr')
-                .filter(function() {
-                    var length = $(this).find('#grade-input-' + this.id + '[value!=""]').length;
-                    return length > 0;
-                });
+            var selectedRows = $('.grade-input')
+				.filter(function() {
+					return this.value.length !== 0;
+				}).closest('tr');
 
             for (i = 0; i < selectedRows.length; i++) {
                 var row = $(selectedRows[i]);
