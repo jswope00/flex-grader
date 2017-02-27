@@ -5,7 +5,9 @@ A flexible grading tool for EdX, where you can assign a grade and comment to any
 Installation
 ------------
 
-To install the flex-grader XBlock, get the source to the /edx/app/edxapp/ folder and execute the following command:
+Make sure that `ALLOW_ALL_ADVANCED_COMPONENTS` feature flag is set to `True` in `cms.env.json`.
+
+Get the source to the /edx/app/edxapp/ folder and execute the following command:
 
 ```bash
 sudo -u edxapp /edx/bin/pip.edxapp install flex-grader/
