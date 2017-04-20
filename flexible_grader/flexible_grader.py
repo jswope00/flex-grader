@@ -448,7 +448,7 @@ class FlexibleGradingXBlock(XBlock):
         """
         Reset a student's score.
         """
-        submissions_api.reset_score(student_id, self.course_id, self.block_id)
+        submissions_api.reset_score(student_id, unicode(self.course_id), unicode(self.block_id))
         module = StudentModule.objects.get(pk=module_id)
         state = json.loads(module.state)
         state['comment'] = ''
