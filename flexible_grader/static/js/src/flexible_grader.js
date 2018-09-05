@@ -18,6 +18,28 @@ function FlexibleGradingXBlock(runtime, element) {
             // Render template
             var content = $(element).find("#sga-content").html(template(state));
         }
+	function sortTable() {
+  	    var table, rows, switching, i, x, y, shouldSwitch;
+  	    table = document.getElementById("grading-table");
+  	    switching = true;
+  	    while (switching) {
+	    	switching = false;
+    		rows = table.rows;
+	    	for (i = 1; i < (rows.length - 1); i++) {
+	            shouldSwitch = false;
+	      	    x = rows[i].getElementsByTagName("TD")[0]; //Arrange by Email
+      	            y = rows[i + 1].getElementsByTagName("TD")[0];
+	           if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+		        shouldSwitch = true;
+        		break;
+      		   	}
+    		    }
+    		if (shouldSwitch) {
+		    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+      		    switching = true;
+    		    }
+  		}
+	    }
 
         function renderStaffGrading(data) {
             if (data.hasOwnProperty('error')) {
@@ -60,25 +82,23 @@ function FlexibleGradingXBlock(runtime, element) {
             $(element).find(".remove-grade-button")
                 .off()
                 .on("click", clearGrade);
-       
 
-	$(element).find("#import_grade_data")
+            $(element).find("#import_grade_data")
                 .off()
                 .on("change", importcsv);
- 
-	$(element).find("#import_grade_button")
+
+	    $(element).find("#import_grade_button")
                 .off()
                 .on("click", importcsv_click);
-     
 
-        $(element).find("#export_grade_data")
+            $(element).find("#export_grade_data")
                 .off()
                 .on("click", exportcsv);
 
-
+	    sortTable();
 	 }
 
-         function exportcsv()			
+         function exportcsv()
  		{
 		console.log(enterexportUrl)
 	        window.location = enterexportUrl;
