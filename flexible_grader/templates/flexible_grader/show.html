@@ -38,8 +38,8 @@
 
     <table id="grading-table" class="gridtable" style="width: 100%">
       <tr>
-        <th width="20%">Username</th>
-        <th width="20%">Email</th>
+	<th width="20%">Email</th>
+        <th width="20%">Full Name</th>
         <th width="5%">Score</th>
         <th width="5%">Max Score</th>
         <th width="18%">Comment</th>
@@ -50,8 +50,8 @@
       <% for (var i = 0; i < assignments.length; i++) { %>
       <%     var assignment = assignments[i]; %>
         <tr id="row-<%= assignment.module_id %>">
-          <td><%= assignment.username %></td>
           <td><%= assignment.email %></td>
+          <td><%= assignment.fullname %></td>
           <td class="sga-score"><%= assignment.score %></td>
           <td><%= max_score %></td>
           <td class="sga-comment"><%= assignment.comment %></td>
